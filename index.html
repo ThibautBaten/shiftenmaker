@@ -15,37 +15,46 @@
             <h3>1. Database Leiding</h3>
             <div class="input-group">
                 <input type="text" id="naam" placeholder="Naam leiding">
-                <input type="text" id="haat" placeholder="Haat-taak (optioneel)">
+                <input type="text" id="haat" placeholder="Haat-taak (moet exact matchen)">
             </div>
             <div class="input-group">
-                <small>Beperkt beschikbaar? (Optioneel):</small>
+                <small>Beschikbaarheid (leeg = altijd):</small>
                 <input type="time" id="beschikbaarVan"> tot <input type="time" id="beschikbaarTot">
                 <button onclick="voegLeidingToe()">Voeg Toe</button>
             </div>
-            
-            <h4>Geregistreerde Leiding:</h4>
             <ul id="leiding-display-lijst" class="lijst-stijl"></ul>
             <p><small id="count">0 personen in database</small></p>
-            <button class="btn-danger" onclick="wisGeheugen()">Volledige database wissen</button>
+            <button class="btn-danger" onclick="wisLeidingGeheugen()">Leiding database wissen</button>
         </div>
 
         <div class="card">
-            <h3>2. Shiften Beheren</h3>
+            <h3>2. Database Shiften</h3>
             <div class="input-group">
-                <input type="text" id="taak" placeholder="Taak naam">
-                <input type="number" id="aantal" placeholder="Aantal personen">
+                <input type="text" id="taak" placeholder="Taak naam (bv. Bar)">
+                <input type="number" id="aantal" placeholder="Aantal pers.">
             </div>
             <div class="input-group">
                 <label>Van:</label> <input type="time" id="starttijd">
                 <label>Tot:</label> <input type="time" id="eindtijd">
-                <button onclick="voegShiftToeAanLijst()" class="btn-alt">Shift Toevoegen</button>
+                <button onclick="voegShiftToeAanLijst()" class="btn-alt">Shift Opslaan</button>
             </div>
             <ul id="geplande-shiften-lijst" class="lijst-stijl"></ul>
+            <button class="btn-danger" onclick="wisShiftenGeheugen()">Alle shiften wissen</button>
+        </div>
+
+        <div class="card">
+            <h3>3. Back-up & Herstel</h3>
+            <p><small>Voorkom dat je gegevens kwijtraakt. Download een kopie naar je computer.</small></p>
+            <div class="input-group">
+                <button onclick="exporteerData()" class="btn-alt" style="background-color: #6c757d;">Download Back-up</button>
+                
+                <input type="file" id="importFile" style="display:none" onchange="importeerData(event)">
+                <button onclick="document.getElementById('importFile').click()" class="btn-alt" style="background-color: #17a2b8;">Upload Back-up</button>
+            </div>
         </div>
 
         <div class="actions">
-            <button onclick="genereerVolledigRooster()" class="btn-main">GENEREER ROOSTER</button>
-            <button onclick="resetEvenement()" class="btn-sub">Alle Shiften Wissen</button>
+            <button onclick="genereerVolledigRooster()" class="btn-main">GENEREER ROOSTER (SLIM)</button>
         </div>
 
         <div id="foutmeldingen"></div>
