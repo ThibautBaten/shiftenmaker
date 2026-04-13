@@ -1,4 +1,4 @@
-// 1. DATA LADEN BIJ OPSTARTEN
+// 1. INITIALISATIE: DATA LADEN
 let leidingLijst = JSON.parse(localStorage.getItem('mijnLeiding')) || [];
 let evenementShiften = JSON.parse(localStorage.getItem('mijnShiften')) || [];
 
@@ -7,10 +7,10 @@ window.onload = function() {
     updateShiftLijstDisplay();
 };
 
-// 2. HULPFUNCTIE VOOR STRIKTE HAAT-CONTROLE
+// 2. STRIKTE HAAT-CONTROLE FUNCTIE
 function isHaatMatch(persoonHaat, shiftTaak) {
     if (!persoonHaat) return false;
-    // Vergelijkt exacte tekst, negeert hoofdletters en spaties rondom
+    // Vergelijkt exacte tekst, negeert hoofdletters en extra spaties
     return persoonHaat.toLowerCase().trim() === shiftTaak.toLowerCase().trim();
 }
 
@@ -29,6 +29,7 @@ function voegLeidingToe() {
             tot: tot || "23:59" 
         });
         saveData();
+        // Velden leegmaken
         document.getElementById('naam').value = '';
         document.getElementById('haat').value = '';
         document.getElementById('beschikbaarVan').value = '';
@@ -50,9 +51,11 @@ function toonLeidingLijst() {
 }
 
 function verwijderLeiding(index) {
-    leidingLijst.splice(index, 1);
-    saveData();
-    toonLeidingLijst();
+    if (confirm("Deze persoon verwijderen uit de database?")) {
+        leidingLijst.splice(index, 1);
+        saveData();
+        toonLeidingLijst();
+    }
 }
 
 // 4. SHIFTEN BEHEREN
@@ -66,6 +69,7 @@ function voegShiftToeAanLijst() {
         evenementShiften.push({ taakNaam, aantal, start, eind });
         saveData();
         updateShiftLijstDisplay();
+        // Velden leegmaken
         document.getElementById('taak').value = '';
         document.getElementById('aantal').value = '';
     }
@@ -88,7 +92,7 @@ function verwijderShift(index) {
     updateShiftLijstDisplay();
 }
 
-// 5. OPSLAAN & BACK-UP
+// 5. DATA OPSLAAN & BACK-UP
 function saveData() {
     localStorage.setItem('mijnLeiding', JSON.stringify(leidingLijst));
     localStorage.setItem('mijnShiften', JSON.stringify(evenementShiften));
@@ -102,6 +106,7 @@ function exporteerData() {
     a.href = url;
     a.download = "planning_backup.json";
     a.click();
+    URL.revokeObjectURL(url);
 }
 
 function importeerData(event) {
@@ -109,63 +114,77 @@ function importeerData(event) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
-        const data = JSON.parse(e.target.result);
-        leidingLijst = data.leiding;
-        evenementShiften = data.shiften;
-        saveData();
-        toonLeidingLijst();
-        updateShiftLijstDisplay();
-        alert("Back-up succesvol ingeladen!");
+        try {
+            const data = JSON.parse(e.target.result);
+            leidingLijst = data.leiding || [];
+            evenementShiften = data.shiften || [];
+            saveData();
+            toonLeidingLijst();
+            updateShiftLijstDisplay();
+            alert("Back-up succesvol ingeladen!");
+        } catch (err) {
+            alert("Ongeldig back-up bestand.");
+        }
     };
     reader.readAsText(file);
 }
 
-// 6. DE GENERATOR (MET WISSEL-LOGICA)
+// 6. DE GENERATOR (MET SLIMME WISSEL-LOGICA)
 function genereerVolledigRooster() {
     const output = document.getElementById('rooster-output');
     const fouten = document.getElementById('foutmeldingen');
+    
+    // Reset scherm
     output.innerHTML = "<h2>Definitief Rooster</h2>";
     fouten.innerHTML = "";
 
-    if (evenementShiften.length === 0 || leidingLijst.length === 0) return alert("Vul eerst alles in!");
+    if (evenementShiften.length === 0 || leidingLijst.length === 0) {
+        return alert("Vul eerst leiding en shiften in!");
+    }
 
     let werkShiften = evenementShiften.map(s => ({ ...s, mensen: [] }));
     let ingeplandeMensen = [];
 
-    // Prioriteit: Mensen met haat-taken of tijdslimieten eerst plannen
-    let gesorteerdeLeiding = [...leidingLijst].sort((a, b) => {
-        let scoreA = (a.haatTaak ? 10 : 0) + (a.van !== "00:00" ? 5 : 0);
-        let scoreB = (b.haatTaak ? 10 : 0) + (b.van !== "00:00" ? 5 : 0);
+    // Schud leiding voor een nieuw resultaat bij elke klik
+    let geshuffeldeLeiding = [...leidingLijst].sort(() => 0.5 - Math.random());
+
+    // Sorteer op 'moeilijkheidsgraad' (mensen met haat of tijdslimiet eerst)
+    let gesorteerdeLeiding = geshuffeldeLeiding.sort((a, b) => {
+        let scoreA = (a.haatTaak ? 10 : 0) + (a.van !== "00:00" || a.tot !== "23:59" ? 5 : 0);
+        let scoreB = (b.haatTaak ? 10 : 0) + (b.van !== "00:00" || b.tot !== "23:59" ? 5 : 0);
         return scoreB - scoreA;
     });
 
-    // Ronde 1: Directe toewijzing
+    // STAP A: Eerste pass (directe plaatsing)
     gesorteerdeLeiding.forEach(persoon => {
         let gelukt = probeerPlaatsing(persoon, werkShiften);
         if (gelukt) ingeplandeMensen.push(persoon.naam);
     });
 
-    // Ronde 2: Wisselen als iemand overblijft
+    // STAP B: Tweede pass (Wissellogica voor de overblijvers)
     let overblijvers = gesorteerdeLeiding.filter(p => !ingeplandeMensen.includes(p.naam));
+    
     overblijvers.forEach(persoon => {
         for (let shift of werkShiften) {
             if (ingeplandeMensen.includes(persoon.naam)) break;
 
-            // Kan deze persoon overhaupt in deze shift (haat/tijd)?
+            // Kan deze persoon fysiek in deze shift?
             if (!isHaatMatch(persoon.haatTaak, shift.taakNaam) && persoon.van <= shift.start && persoon.tot >= shift.eind) {
-                // Zoek iemand om mee te ruilen
+                
+                // Probeer te ruilen met iemand die er al in zit
                 for (let i = 0; i < shift.mensen.length; i++) {
-                    let persoonInShift = leidingLijst.find(l => l.naam === shift.mensen[i]);
-                    
-                    // Zoek een andere plek voor de persoon die we wegjagen
+                    let persoonInShiftNaam = shift.mensen[i];
+                    let persoonInShiftObj = leidingLijst.find(l => l.naam === persoonInShiftNaam);
+
+                    // Kan de persoon die er al in zit naar een ANDERE shift verhuizen?
                     for (let andereShift of werkShiften) {
                         if (andereShift === shift) continue;
                         if (andereShift.mensen.length < andereShift.aantal && 
-                            !isHaatMatch(persoonInShift.haatTaak, andereShift.taakNaam) &&
-                            persoonInShift.van <= andereShift.start && persoonInShift.tot >= andereShift.eind) {
+                            !isHaatMatch(persoonInShiftObj.haatTaak, andereShift.taakNaam) &&
+                            persoonInShiftObj.van <= andereShift.start && persoonInShiftObj.tot >= andereShift.eind) {
                             
-                            // De Ruil
-                            andereShift.mensen.push(persoonInShift.naam);
+                            // DE WISSEL
+                            andereShift.mensen.push(persoonInShiftNaam);
                             shift.mensen[i] = persoon.naam;
                             ingeplandeMensen.push(persoon.naam);
                             break;
@@ -177,26 +196,31 @@ function genereerVolledigRooster() {
         }
     });
 
-    // Toon resultaat
+    // 7. RESULTATEN TEKENEN
     werkShiften.forEach(shift => {
         output.innerHTML += `
             <div class="shift-card">
                 <strong>📍 ${shift.taakNaam.toUpperCase()}</strong> (${shift.mensen.length}/${shift.aantal})<br>
                 <span>⏰ ${shift.start} - ${shift.eind}</span><br>
-                <span>👥 ${shift.mensen.join(', ') || "<i>Niemand</i>"}</span>
+                <span>👥 ${shift.mensen.join(', ') || "<i>Niemand ingepland</i>"}</span>
             </div>`;
     });
 
-    // Foutmeldingen voor de overblijvers
     let finaleNietIngepland = leidingLijst.filter(p => !ingeplandeMensen.includes(p.naam));
     if (finaleNietIngepland.length > 0) {
-        fouten.innerHTML = `<div class="error-box"><h3>⚠️ Te weinig plek</h3><p>Kon niet iedereen plaatsen:</p><ul>` + 
-            finaleNietIngepland.map(p => `<li>${p.naam}</li>`).join('') + `</ul></div>`;
+        let foutHTML = `<div class="error-box"><h3>⚠️ Niet iedereen kon geplaatst worden</h3><ul>`;
+        finaleNietIngepland.forEach(p => foutHTML += `<li>${p.naam}</li>`);
+        foutHTML += `</ul><p><small>Tip: Voeg meer shift-plekken toe of check tijdsbeperkingen.</small></p></div>`;
+        fouten.innerHTML = foutHTML;
+    } else {
+        fouten.innerHTML = `<div class="shift-card" style="border-left-color: blue; background: #eef7ff;">✅ Iedereen is ingepland! Druk opnieuw voor een andere variatie.</div>`;
     }
 }
 
 function probeerPlaatsing(persoon, shiften) {
-    for (let shift of shiften) {
+    // Sorteer shiften op 'leegste eerst' om gaten te vullen
+    let gesorteerdeShiften = [...shiften].sort((a, b) => a.mensen.length - b.mensen.length);
+    for (let shift of gesorteerdeShiften) {
         if (shift.mensen.length < shift.aantal && 
             !isHaatMatch(persoon.haatTaak, shift.taakNaam) &&
             persoon.van <= shift.start && persoon.tot >= shift.eind) {
@@ -207,6 +231,6 @@ function probeerPlaatsing(persoon, shiften) {
     return false;
 }
 
-// 7. RESET FUNCTIES
-function wisLeidingGeheugen() { if (confirm("Leiding database wissen?")) { localStorage.removeItem('mijnLeiding'); location.reload(); } }
+// RESET ACTIES
+function wisLeidingGeheugen() { if (confirm("Hele leiding database wissen?")) { localStorage.removeItem('mijnLeiding'); location.reload(); } }
 function wisShiftenGeheugen() { if (confirm("Alle shiften wissen?")) { localStorage.removeItem('mijnShiften'); location.reload(); } }
