@@ -2,29 +2,52 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Schiftenlijst Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leiding Schiften Planner</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Schiften Planner</h1>
-    
-    <div id="input-sectie">
-        <h3>Werknemer Toevoegen</h3>
-        <input type="text" id="naam" placeholder="Naam">
-        <input type="text" id="haat" placeholder="Wil nooit doen (bijv. Afwas)">
-        <button onclick="voegWerknemerToe()">Voeg Werknemer Toe</button>
-    </div>
+    <div class="container">
+        <h1>📅 Leiding Schiften Planner</h1>
 
-    <div id="shift-sectie">
-        <h3>Shift Toevoegen</h3>
-        <input type="text" id="taak" placeholder="Taak naam">
-        <input type="number" id="aantal" placeholder="Aantal mensen">
-        <button onclick="genereerRoosterClick()">Genereer Rooster</button>
-    </div>
+        <div class="card">
+            <h3>1. Leiding Toevoegen</h3>
+            <div class="input-group">
+                <input type="text" id="naam" placeholder="Naam leiding">
+                <input type="text" id="haat" placeholder="Wil nooit doen (bijv. Afwas)">
+                <button onclick="voegLeidingToe()">Voeg Toe</button>
+            </div>
+            
+            <h4>Geregistreerde Leiding:</h4>
+            <ul id="leiding-display-lijst" class="lijst-stijl"></ul>
+            
+            <p><small id="count">0 personen in database</small></p>
+            <button class="btn-danger" onclick="wisGeheugen()">Volledige database wissen</button>
+        </div>
 
-    <div id="foutmeldingen"></div>
-    <div id="rooster-output"></div>
-    <div id="overschot-sectie"></div>
+        <div class="card">
+            <h3>2. Shift Toevoegen</h3>
+            <div class="input-group">
+                <input type="text" id="taak" placeholder="Taak naam">
+                <input type="number" id="aantal" placeholder="Aantal personen">
+            </div>
+            <div class="input-group">
+                <label>Van:</label> <input type="time" id="starttijd">
+                <label>Tot:</label> <input type="time" id="eindtijd">
+                <button onclick="voegShiftToeAanLijst()" class="btn-alt">Voeg Shift Toe</button>
+            </div>
+            <ul id="geplande-shifts-lijst"></ul>
+        </div>
+
+        <div class="actions">
+            <button onclick="genereerVolledigRooster()" class="btn-main">GENEREER ROOSTER</button>
+            <button onclick="resetEvenement()" class="btn-sub">Nieuw Evenement (Lijst leegmaken)</button>
+        </div>
+
+        <div id="foutmeldingen"></div>
+        <div id="rooster-output"></div>
+        <div id="overschot-sectie"></div>
+    </div>
 
     <script src="script.js"></script>
 </body>
