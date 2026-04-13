@@ -15,13 +15,16 @@
             <h3>1. Database Leiding</h3>
             <div class="input-group">
                 <input type="text" id="naam" placeholder="Naam leiding">
-                <input type="text" id="haat" placeholder="Wil nooit doen (bijv. Afwas)">
+                <input type="text" id="haat" placeholder="Haat-taak (optioneel)">
+            </div>
+            <div class="input-group">
+                <small>Beperkt beschikbaar? (Optioneel):</small>
+                <input type="time" id="beschikbaarVan"> tot <input type="time" id="beschikbaarTot">
                 <button onclick="voegLeidingToe()">Voeg Toe</button>
             </div>
             
             <h4>Geregistreerde Leiding:</h4>
             <ul id="leiding-display-lijst" class="lijst-stijl"></ul>
-            
             <p><small id="count">0 personen in database</small></p>
             <button class="btn-danger" onclick="wisGeheugen()">Volledige database wissen</button>
         </div>
@@ -37,7 +40,6 @@
                 <label>Tot:</label> <input type="time" id="eindtijd">
                 <button onclick="voegShiftToeAanLijst()" class="btn-alt">Shift Toevoegen</button>
             </div>
-            <h4>Geplande Shiften (Klik op ✕ om te verwijderen):</h4>
             <ul id="geplande-shiften-lijst" class="lijst-stijl"></ul>
         </div>
 
@@ -49,7 +51,6 @@
         <div id="foutmeldingen"></div>
         <div id="rooster-output"></div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
