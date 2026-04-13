@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Schiftenlijst Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Schiften Planner</h1>
+    
+    <div id="input-sectie">
+        <h3>Werknemer Toevoegen</h3>
+        <input type="text" id="naam" placeholder="Naam">
+        <input type="text" id="haat" placeholder="Wil nooit doen (bijv. Afwas)">
+        <button onclick="voegWerknemerToe()">Voeg Werknemer Toe</button>
+    </div>
+
+    <div id="shift-sectie">
+        <h3>Shift Toevoegen</h3>
+        <input type="text" id="taak" placeholder="Taak naam">
+        <input type="number" id="aantal" placeholder="Aantal mensen">
+        <button onclick="genereerRoosterClick()">Genereer Rooster</button>
+    </div>
+
+    <div id="foutmeldingen"></div>
+    <div id="rooster-output"></div>
+    <div id="overschot-sectie"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
