@@ -1,12 +1,12 @@
-// Gegevens inladen
+// Data laden uit localStorage
 let leidingLijst = JSON.parse(localStorage.getItem('mijnLeiding')) || [];
-let evenementShifts = [];
+let evenementShiften = [];
 
 // Bij opstarten lijst tonen
 toonLeidingLijst();
 
 function updateCount() {
-    document.getElementById('count').innerText = `${leidingLijst.length} leiding in database`;
+    document.getElementById('count').innerText = `${leidingLijst.length} personen in database`;
 }
 
 function voegLeidingToe() {
@@ -52,13 +52,10 @@ function voegShiftToeAanLijst() {
     const eind = document.getElementById('eindtijd').value;
     
     if (taakNaam && aantal && start && eind) {
-        evenementShifts.push({ taakNaam, aantal, tijd: `${start} - ${eind}` });
+        evenementShiften.push({ taakNaam, aantal, start, eind });
+        updateShiftLijstDisplay();
         
-        const li = document.createElement('li');
-        li.style.padding = "5px 0";
-        li.innerText = `📌 ${taakNaam} | ${aantal} pers. | ${start}-${eind}`;
-        document.getElementById('geplande-shifts-lijst').appendChild(li);
-        
+        // Velden leegmaken
         document.getElementById('taak').value = '';
         document.getElementById('aantal').value = '';
     } else {
@@ -66,63 +63,93 @@ function voegShiftToeAanLijst() {
     }
 }
 
+function updateShiftLijstDisplay() {
+    const display = document.getElementById('geplande-shiften-lijst');
+    display.innerHTML = "";
+    evenementShiften.forEach((s, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span>📌 ${s.taakNaam} (${s.aantal} pers.) | ${s.start} - ${s.eind}</span>
+            <button class="delete-btn" onclick="verwijderShift(${index})">✕</button>
+        `;
+        display.appendChild(li);
+    });
+}
+
+function verwijderShift(index) {
+    evenementShiften.splice(index, 1);
+    updateShiftLijstDisplay();
+}
+
 function genereerVolledigRooster() {
-    let pool = [...leidingLijst];
     const output = document.getElementById('rooster-output');
     const fouten = document.getElementById('foutmeldingen');
-    const overschotDiv = document.getElementById('overschot-sectie');
-    
-    output.innerHTML = "";
+    output.innerHTML = "<h2>Definitief Rooster</h2>";
     fouten.innerHTML = "";
-    overschotDiv.innerHTML = "";
 
-    if (evenementShifts.length === 0) return alert("Voeg eerst shifts toe!");
+    if (evenementShiften.length === 0) return alert("Voeg eerst shiften toe!");
 
-    evenementShifts.forEach(shift => {
-        // Filter leiding die de taak niet wil doen
-        let kandidaten = pool.filter(l => l.haatTaak.toLowerCase() !== shift.taakNaam.toLowerCase());
+    let ingeplandeLeidingPerTijd = []; 
+    let alleIngezetteNamen = new Set();
+
+    // Sorteer shiften op starttijd
+    evenementShiften.sort((a, b) => a.start.localeCompare(b.start));
+
+    evenementShiften.forEach(shift => {
+        // 1. Filter: Wie wil de taak niet doen?
+        let kandidaten = leidingLijst.filter(l => l.haatTaak.toLowerCase() !== shift.taakNaam.toLowerCase());
+        
+        // 2. Filter: Wie is al aan het werk op dit tijdstip?
+        kandidaten = kandidaten.filter(l => {
+            const overlap = ingeplandeLeidingPerTijd.some(p => 
+                p.naam === l.naam && 
+                !(shift.start >= p.eind || shift.eind <= p.start)
+            );
+            return !overlap;
+        });
 
         if (kandidaten.length < shift.aantal) {
             fouten.innerHTML += `<div class="error">⚠️ Tekort voor ${shift.taakNaam}! Nodig: ${shift.aantal}, Beschikbaar: ${kandidaten.length}</div>`;
         }
 
-        // Shuffle en kies
+        // Shuffle kandidaten voor eerlijke verdeling
         let gekozen = kandidaten.sort(() => 0.5 - Math.random()).slice(0, shift.aantal);
-        let gekozenNamen = gekozen.map(l => l.naam);
-
-        // Verwijder uit pool zodat ze niet dubbel gepland worden
-        pool = pool.filter(l => !gekozenNamen.includes(l.naam));
+        
+        gekozen.forEach(l => {
+            ingeplandeLeidingPerTijd.push({ naam: l.naam, start: shift.start, eind: shift.eind });
+            alleIngezetteNamen.add(l.naam);
+        });
 
         output.innerHTML += `
             <div class="shift-card">
                 <strong>📍 ${shift.taakNaam}</strong><br>
-                <span>⏰ Tijd: ${shift.tijd}</span><br>
-                <span>👥 Leiding: ${gekozenNamen.join(', ') || "<i>Niemand toegewezen</i>"}</span>
+                <span>⏰ Tijd: ${shift.start} - ${shift.eind}</span><br>
+                <span>👥 Leiding: ${gekozen.map(l => l.naam).join(', ') || "<i>Niemand toegewezen</i>"}</span>
             </div>
         `;
     });
 
-    if (pool.length > 0) {
-        overschotDiv.innerHTML = `
-            <div class="card" style="background: #e7f3ff;">
-                <h3>Nog vrij:</h3>
-                <p>${pool.map(l => l.naam).join(', ')}</p>
-            </div>`;
+    // Controle: Heeft iedereen een taak?
+    let nietIngezet = leidingLijst.filter(l => !alleIngezetteNamen.has(l.naam));
+    if (nietIngezet.length > 0) {
+        fouten.innerHTML += `<div class="warning">ℹ️ ${nietIngezet.length} personen hebben nog geen taak: ${nietIngezet.map(l => l.naam).join(', ')}</div>`;
+    } else if (leidingLijst.length > 0) {
+        fouten.innerHTML += `<div class="shift-card" style="border-left-color: blue;">✅ Perfect! Iedereen uit de database is ingezet.</div>`;
     }
 }
 
 function resetEvenement() {
-    evenementShifts = [];
-    document.getElementById('geplande-shifts-lijst').innerHTML = "";
+    evenementShiften = [];
+    updateShiftLijstDisplay();
     document.getElementById('rooster-output').innerHTML = "";
     document.getElementById('foutmeldingen').innerHTML = "";
-    document.getElementById('overschot-sectie').innerHTML = "";
 }
 
 function wisGeheugen() {
-    if (confirm("Dit wist alle opgeslagen leiding. Weet je het zeker?")) {
+    if (confirm("Weet je zeker dat je de hele database met leiding wilt wissen?")) {
         localStorage.removeItem('mijnLeiding');
         leidingLijst = [];
         toonLeidingLijst();
+        location.reload();
     }
 }

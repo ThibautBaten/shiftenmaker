@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leiding Schiften Planner</title>
+    <title>Leiding Shiften Planner</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>📅 Leiding Schiften Planner</h1>
+        <h1>📅 Leiding Shiften Planner</h1>
 
         <div class="card">
-            <h3>1. Leiding Toevoegen</h3>
+            <h3>1. Database Leiding</h3>
             <div class="input-group">
                 <input type="text" id="naam" placeholder="Naam leiding">
                 <input type="text" id="haat" placeholder="Wil nooit doen (bijv. Afwas)">
@@ -27,7 +27,7 @@
         </div>
 
         <div class="card">
-            <h3>2. Shift Toevoegen</h3>
+            <h3>2. Shiften Beheren</h3>
             <div class="input-group">
                 <input type="text" id="taak" placeholder="Taak naam">
                 <input type="number" id="aantal" placeholder="Aantal personen">
@@ -35,19 +35,19 @@
             <div class="input-group">
                 <label>Van:</label> <input type="time" id="starttijd">
                 <label>Tot:</label> <input type="time" id="eindtijd">
-                <button onclick="voegShiftToeAanLijst()" class="btn-alt">Voeg Shift Toe</button>
+                <button onclick="voegShiftToeAanLijst()" class="btn-alt">Shift Toevoegen</button>
             </div>
-            <ul id="geplande-shifts-lijst"></ul>
+            <h4>Geplande Shiften (Klik op ✕ om te verwijderen):</h4>
+            <ul id="geplande-shiften-lijst" class="lijst-stijl"></ul>
         </div>
 
         <div class="actions">
             <button onclick="genereerVolledigRooster()" class="btn-main">GENEREER ROOSTER</button>
-            <button onclick="resetEvenement()" class="btn-sub">Nieuw Evenement (Lijst leegmaken)</button>
+            <button onclick="resetEvenement()" class="btn-sub">Alle Shiften Wissen</button>
         </div>
 
         <div id="foutmeldingen"></div>
         <div id="rooster-output"></div>
-        <div id="overschot-sectie"></div>
     </div>
 
     <script src="script.js"></script>
